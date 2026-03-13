@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "zeta-intersect-explorer"
+version = "0.1.0"
+description = "Tool for exploring Riemann zeta function zero intersections"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "mpmath",
+    "matplotlib",
+]
+
+[project.urls]
+Homepage = "https://github.com/JDvorak1/Zeta-intersect-explorer"
+
+[tool.setuptools]
+py-modules = ["zetaExplorer"]

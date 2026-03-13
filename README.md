@@ -147,10 +147,8 @@ results.plot_intersects(show_critical_line=True)
 ## Installation
 
 ```bash
-pip install mpmath numpy matplotlib
+pip install git+https://github.com/JDvorak1/Zeta-intersect-explorer.git
 ```
-
-Place `zetaExplorer.py` in your project and import it.
 
 ---
 
