@@ -13,7 +13,7 @@ import matplotlib
 matplotlib.use("TkAgg")
 
 mpmath.mp.dps = 25
-
+np.random.seed(42)
 
 def _generate_circle(cx, cy, radius, n):
     angles = np.linspace(0, 2 * np.pi, n, endpoint=False)

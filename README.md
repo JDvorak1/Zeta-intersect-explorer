@@ -34,9 +34,8 @@ pip install --upgrade git+https://github.com/JDvorak1/Zeta-intersect-explorer.gi
 - [The Riemann-zeta fingerprint](#the-riemann-zeta-fingerprint)
 - [The zeta egg](#the-zeta-egg)
 - [Single curves](#single-curves)
-- [Non-trivial peaks](#non-trivial-peaks)
 - [Box search](#box-search)
-- [Installation](#installation)
+- [Non-trivial peaks](#non-trivial-peaks)
 - [API reference](#api-reference)
 - [File structure](#file-structure)
 
@@ -44,7 +43,7 @@ pip install --upgrade git+https://github.com/JDvorak1/Zeta-intersect-explorer.gi
 
 ## The Riemann-zeta fingerprint
 
-Running a broad circle search from a central seed reveals the fingerprint of the Riemann zeta function — the characteristic pattern of intersection points spread across the complex plane.
+Running a broad circle search from a central seed reveals the fingerprint of the Riemann zeta function. From these points, it's already possible to see the curves.
 
 ![Fingerprint map centered near the origin](figures/fingerprint%200.png)
 
@@ -75,6 +74,10 @@ Near the trivial zero at (−2, 0) the intersection curve closes into a loop.
 
 ![The zeta egg](figures/the%20zeta%20egg.png)
 
+3d plot of the zeta egg.
+
+![The zeta egg](figures/3d_egg.gif)
+
 Produced with [`examples/eggsplorer.py`](examples/eggsplorer.py):
 
 ```python
@@ -82,16 +85,17 @@ import zetaExplorer
 
 results = zetaExplorer.run("circleSearch", starting_point=(-2, 0),
                            radius_range=(0.5, 1.5), rounds=5,
-                           circles_per_round=25, precision=500)
-results.to_csv("egg_points.csv")
+                           circles_per_round=25, precision=250)
+
 results.plot_intersects()
+results.plot_3d()
 ```
 
 ---
 
 ## Single curves
 
-The **Columbus search** (`columbusSearch`) works differently from the circle search. Instead of spreading outward in all directions, it always steps toward the point farthest from the starting location — hugging a single branch and following it wherever it leads.
+The **Columbus search** (`columbusSearch`) works differently from the circle search. Instead of spreading outward in all directions, it always steps toward the point farthest from the starting location.
 
 This makes it well-suited for tracing complicated, winding curves inside the Riemann plane without losing the thread.
 
@@ -120,7 +124,7 @@ results = zetaExplorer.run("circleSearch", seed_results=results)
 results.to_csv("intersections.csv")
 results.plot_intersects()
 ```
-Curve stating at the first zero on the critical line.
+Curve starting at the first zero on the critical line.
 
 ![Single curve traced by the Columbus algorithm](figures/single%20curve%20algo.png)
 
