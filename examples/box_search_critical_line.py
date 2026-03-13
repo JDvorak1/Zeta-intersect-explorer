@@ -13,7 +13,10 @@ results = zetaExplorer.run(
     num_circles=200,
     radius_range=(0.75, 1.5),
     precision=250,
+    verbose=False
 )
+
+print("Box search done")
 
 # Finer search
 results = zetaExplorer.run("circleSearch", seed_results=results,radius_range=(0.25,0.35),iterations=50,precision=250)
