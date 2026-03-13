@@ -2,7 +2,7 @@
 
 **zetaExplorer** maps the intersections where the real and imaginary parts of the Riemann zeta function are equal — all points *s* in the complex plane where Re(ζ(s)) = Im(ζ(s)). It can chart broad regions of these intersections, follow the complicated curves they form deep into the complex plane, and focus a search on any rectangular region of interest.
 
-Three algorithms are available: a **circle search** that fans outward from a seed point to document big or small details, a **box search** that confines the circle search to a user-defined rectangular region, and a **Columbus search** that follows a single continuous curve as far as you set it to go.
+Four algorithms are available: a **circle search** that fans outward from a starting point to document big or small details, a **box search** that confines the circle search to a user-defined rectangular region, a **Columbus search** that follows a single continuous curve as far as you set it to go, and a **find max real** algorithm that locates the point with the highest real part near a given starting point.
 
 ---
 
@@ -34,6 +34,7 @@ pip install --upgrade git+https://github.com/JDvorak1/Zeta-intersect-explorer.gi
 - [The Riemann-zeta fingerprint](#the-riemann-zeta-fingerprint)
 - [The zeta egg](#the-zeta-egg)
 - [Single curves](#single-curves)
+- [Non-trivial peaks](#non-trivial-peaks)
 - [Box search](#box-search)
 - [Installation](#installation)
 - [API reference](#api-reference)
@@ -156,6 +157,29 @@ results = zetaExplorer.run("circleSearch", seed_results=results,
 
 results.plot_intersects(show_critical_line=True)
 ```
+## Non-trivial peaks
+
+The **find max real** algorithm (`findMaxReal`) locates the intersection point with the highest real part reachable from a given starting point. This makes it useful as a feature discovery tool. Especially when analysing the peaks of the curves that pass through the critical strip.
+
+![Peaks](figures/peaks.png)
+
+Produced with [`examples/non-trivial_peaks.py`](examples/non-trivial_peaks.py):
+
+```python
+import mpmath
+import zetaExplorer
+
+zeros = [mpmath.zetazero(n) for n in range(1, 4)]
+
+results = None
+for z in zeros:
+    r = zetaExplorer.run("findMaxReal", starting_point=(float(z.real), float(z.imag)),
+                         initial_radius=0.75, iterations=20, verbose=False)
+    results = r if results is None else results + r
+    print("Peak: ", r.peak_real[0])
+
+results.plot_intersects(show_critical_line=True)
+```
 
 ---
 
@@ -227,6 +251,24 @@ zetaExplorer.run(
 
 ---
 
+#### `"findMaxReal"` — peak real-axis finder
+
+Starting from a given point, locates the intersection with the highest real part reachable within the search budget. Useful for identifying the real-axis extent of a curve passing through a known feature such as a non-trivial zero.
+
+```python
+zetaExplorer.run(
+    "findMaxReal",
+    starting_point=(0.5, 14.135), # starting location in the complex plane
+    initial_radius=0.75,           # radius of the initial circle
+    iterations=20,                 # number of steps to take
+    verbose=True,                  # print progress
+)
+```
+
+The returned `IntersectionResults` object exposes `peak_real` — the coordinates of the intersection with the highest real part found.
+
+---
+
 ### `IntersectionResults`
 
 ```python
@@ -250,7 +292,8 @@ examples/
 ├── map_explorer.py              — broad fingerprint map
 ├── eggsplorer.py                — closed egg structure near (-2, 0)
 ├── single_curve.py              — single-branch Columbus trace
-└── box_search_critical_line.py  — box search along the critical strip
+├── box_search_critical_line.py  — box search along the critical strip
+└── non-trivial_peaks.py         — peak real-axis finder for non-trivial zeros
 figures/
 ├── fingerprint 0.png
 ├── fingerprint1.png
