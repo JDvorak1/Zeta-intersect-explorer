@@ -1,10 +1,32 @@
 # zetaExplorer
 
-**zetaExplorer** maps the intersections where the real and imaginary parts of the Riemann zeta function are equal — all points *s* in the complex plane where Re(ζ(s)) = Im(ζ(s)). It can chart broad regions of these intersections, and it can follow the complicated curves they form deep into the complex plane.
+**zetaExplorer** maps the intersections where the real and imaginary parts of the Riemann zeta function are equal — all points *s* in the complex plane where Re(ζ(s)) = Im(ζ(s)). It can chart broad regions of these intersections, follow the complicated curves they form deep into the complex plane, and focus a search on any rectangular region of interest.
 
-Two algorithms are available: a **circle search** that fans outward from a seed point to document big or small details, and a **Columbus search** that follows a single continuous curve as far as you set it to go.
+Three algorithms are available: a **circle search** that fans outward from a seed point to document big or small details, a **box search** that confines the circle search to a user-defined rectangular region, and a **Columbus search** that follows a single continuous curve as far as you set it to go.
 
-## The fingerprints
+---
+
+## Why this tool exists
+
+The intersections where Re(ζ(s)) = Im(ζ(s)) are not scattered randomly — they form individual, continuous curves that run through the complex plane. zetaExplorer is built to collect data on those curves: mapping their shapes, tracing them individually, and surveying specific regions in detail.
+
+The goal behind that data collection is to find equations that describe individual curves. An equation that correctly describes one of these curves would, by definition, produce points where Re(ζ(s)) = Im(ζ(s)) when fed into the zeta function. If enough of those equations could be found and understood, they could bring us closer to a numerical resolution of the Riemann hypothesis.
+
+---
+
+## Contents
+
+- [The Riemann-zeta fingerprint](#the-riemann-zeta-fingerprint)
+- [The zeta egg](#the-zeta-egg)
+- [Single curves](#single-curves)
+- [Box search](#box-search)
+- [Installation](#installation)
+- [API reference](#api-reference)
+- [File structure](#file-structure)
+
+---
+
+## The Riemann-zeta fingerprint
 
 Running a broad circle search from a central seed reveals the fingerprint of the Riemann zeta function — the characteristic pattern of intersection points spread across the complex plane.
 
@@ -59,6 +81,7 @@ This makes it well-suited for tracing complicated, winding curves inside the Rie
 
 
 Curve starting at (-4,0)
+
 ![imag zero](figures/zeroline.png)
 
 Produced with [`examples/single_curve.py`](examples/single_curve.py):
@@ -82,8 +105,42 @@ results.to_csv("intersections.csv")
 results.plot_intersects()
 ```
 Curve stating at the first zero on the critical line.
+
 ![Single curve traced by the Columbus algorithm](figures/single%20curve%20algo.png)
 
+
+---
+
+## Box search
+
+The **box search** (`boxSearch`) runs a circle search constrained to a rectangular region of the complex plane defined by two corner points. Random circles are placed uniformly within the box, making it easy to survey a specific area without the search drifting outside it.
+
+This is useful when you want to focus on a known region — for example, the critical strip around Re(s) = 1/2 where the non-trivial zeros of the Riemann zeta function are located.
+
+![Zeta zeros along the critical line](figures/zeta%20zeros.png)
+
+Produced with [`examples/box_search_critical_line.py`](examples/box_search_critical_line.py):
+
+```python
+import zetaExplorer
+
+# Explore the strip around the critical line Re(s) = 1/2
+# Box: Re(s) from 0 to 1.5, Im(s) from 10 to 28
+results = zetaExplorer.run(
+    "boxSearch",
+    box_start=(0, 10),
+    box_end=(1.5, 28),
+    num_circles=200,
+    radius_range=(0.75, 1.5),
+    precision=250,
+)
+
+# Finer search
+results = zetaExplorer.run("circleSearch", seed_results=results,
+                            radius_range=(0.25, 0.35), iterations=50, precision=250)
+
+results.plot_intersects(show_critical_line=True)
+```
 
 ---
 
@@ -123,6 +180,23 @@ zetaExplorer.run(
 ```
 
 When `seed_results` is provided, `starting_point` and `rounds` are ignored — the search continues by placing random circles on points already found.
+
+---
+
+#### `"boxSearch"` — constrained area search
+
+Places circles randomly within a rectangular region defined by two corner points and records all intersection crossings found within it.
+
+```python
+zetaExplorer.run(
+    "boxSearch",
+    box_start=(0, 10),      # bottom-left corner (Re, Im)
+    box_end=(1.5, 28),      # top-right corner (Re, Im)
+    num_circles=200,         # number of random circles to place
+    radius_range=(0.75, 1.5),
+    precision=250,
+)
+```
 
 ---
 
@@ -168,14 +242,16 @@ combined = results_a + results_b # merge two result sets
 ```
 zetaExplorer.py         — the full tool (single file)
 examples/
-├── map_explorer.py     — broad fingerprint map
-├── eggsplorer.py       — closed egg structure near (-2, 0)
-└── single_curve.py     — single-branch Columbus trace
+├── map_explorer.py              — broad fingerprint map
+├── eggsplorer.py                — closed egg structure near (-2, 0)
+├── single_curve.py              — single-branch Columbus trace
+└── box_search_critical_line.py  — box search along the critical strip
 figures/
 ├── fingerprint 0.png
 ├── fingerprint1.png
 ├── fingerprint 2.png
 ├── the zeta egg.png
 ├── single curve algo.png
-└── zero line.png
+├── zero line.png
+└── zeta zeros.png
 ```

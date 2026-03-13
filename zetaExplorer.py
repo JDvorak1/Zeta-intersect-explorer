@@ -91,8 +91,35 @@ class IntersectionResults:
             for re, im in zip(self._re, self._im):
                 writer.writerow([re, im])
 
-    def plot_intersects(self):
-        plt.scatter(self._im, self._re,  s=10, alpha=0.7)
+    def plot_intersects(self, show_critical_line=False):
+        plt.scatter(self._im, self._re, s=10, alpha=0.7)
+        if show_critical_line:
+            plt.axhline(y=0.5, color="red", linewidth=1, linestyle="--", label="Critical line Re(s)=½")
+            im_min, im_max = self._im.min(), self._im.max()
+            zeros_im = []
+            # Upper half-plane zeros (positive imaginary part)
+            n = 1
+            while True:
+                z = mpmath.zetazero(n)
+                t = float(z.imag)
+                if t > im_max:
+                    break
+                if t >= im_min:
+                    zeros_im.append(t)
+                n += 1
+            # Lower half-plane zeros (negative imaginary part, conjugates)
+            n = 1
+            while True:
+                t = -float(mpmath.zetazero(n).imag)
+                if t < im_min:
+                    break
+                if t <= im_max:
+                    zeros_im.append(t)
+                n += 1
+            if zeros_im:
+                plt.scatter(zeros_im, [0.5] * len(zeros_im),
+                            s=40, color="red", zorder=5, label=f"Zeta zeros ({len(zeros_im)})")
+            plt.legend()
         plt.xlabel("Im(s)")
         plt.ylabel("Re(s)")
         plt.title(f"Riemann Zeta Intersections ({len(self._re)} points)")
@@ -198,10 +225,40 @@ def _run_columbus_search(
     return IntersectionResults(found)
 
 
+def _run_box_search(
+    box_start=(0.0, 0.0),    # (re_min, im_min) — lower corner of the box
+    box_end=(1.0, 30.0),     # (re_max, im_max) — upper corner of the box
+    num_circles=250,
+    radius_range=(0.25, 1.0),
+    verbose=True,
+    precision=250):
+    re_min, im_min = box_start
+    re_max, im_max = box_end
+
+    found = []
+    for i in range(1, num_circles + 1):
+        cx = random.uniform(re_min, re_max)
+        cy = random.uniform(im_min, im_max)
+        radius = random.uniform(*radius_range)
+        re_arr, im_arr = _generate_circle(cx, cy, radius, precision)
+        zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
+        crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im)
+        in_box = [(re, im) for re, im in crossings
+                  if re_min <= re <= re_max and im_min <= im <= im_max]
+        found.extend(in_box)
+        _status(f"Circle {i}/{num_circles}: {len(in_box)} kept | {len(found)} total", verbose)
+
+    if verbose:
+        print()
+    return IntersectionResults(found)
+
+
 def run(algorithm, **kwargs):
     if algorithm == "circleSearch":
         return _run_random_circle_search(**kwargs)
     elif algorithm == "columbusSearch":
         return _run_columbus_search(**kwargs)
+    elif algorithm == "boxSearch":
+        return _run_box_search(**kwargs)
     else:
         raise ValueError(f"Unknown algorithm: '{algorithm}'")
