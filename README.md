@@ -14,6 +14,14 @@ The goal behind that data collection is to find equations that describe individu
 
 ---
 
+## Installation
+
+```bash
+pip install git+https://github.com/JDvorak1/Zeta-intersect-explorer.git
+```
+
+---
+
 ## Contents
 
 - [The Riemann-zeta fingerprint](#the-riemann-zeta-fingerprint)
@@ -140,14 +148,6 @@ results = zetaExplorer.run("circleSearch", seed_results=results,
                             radius_range=(0.25, 0.35), iterations=50, precision=250)
 
 results.plot_intersects(show_critical_line=True)
-```
-
----
-
-## Installation
-
-```bash
-pip install git+https://github.com/JDvorak1/Zeta-intersect-explorer.git
 ```
 
 ---
