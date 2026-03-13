@@ -16,4 +16,9 @@ results = down_search + up_search
 results = zetaExplorer.run("circleSearch", seed_results=results)
 
 results.to_csv("intersections.csv")
-results.plot_intersects()
+
+# This step is not needed.
+# It just shows how to get the data back into python
+imported_CSV_data = zetaExplorer.IntersectionResults.from_csv("intersections.csv")
+
+imported_CSV_data.plot_intersects()

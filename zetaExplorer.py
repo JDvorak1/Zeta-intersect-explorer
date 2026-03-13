@@ -100,6 +100,17 @@ class IntersectionResults:
             self._zeta_avg = (zeta_re + zeta_im) / 2.0
         return self._zeta_avg
 
+    @classmethod
+    def from_csv(cls, path):
+        points, zeta_avg = [], []
+        with open(path, newline="") as f:
+            for row in csv.DictReader(f):
+                points.append((float(row["Re(s)"]), float(row["Im(s)"])))
+                zeta_avg.append(float(row["Zeta_result"]))
+        obj = cls(points)
+        obj._zeta_avg = np.array(zeta_avg)
+        return obj
+
     def to_csv(self, path):
         with open(path, "w", newline="") as f:
             writer = csv.writer(f)
