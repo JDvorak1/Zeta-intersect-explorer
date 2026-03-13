@@ -2,10 +2,6 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# This is if you want mouse rotation support for windows
-import matplotlib
-matplotlib.use("TkAgg")
-
 import zetaExplorer
 
 starting_point = (0.5, 14.1347)
@@ -27,4 +23,5 @@ results = zetaExplorer.run(
     iterations=30,
     precision=400,
 )
+
 results.plot_3d()

@@ -4,6 +4,10 @@ import numpy as np
 import mpmath
 import matplotlib.pyplot as plt
 
+# This is if you want mouse rotation support for windows
+import matplotlib
+matplotlib.use("TkAgg")
+
 mpmath.mp.dps = 25
 
 
