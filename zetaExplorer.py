@@ -3,6 +3,9 @@ import csv
 import numpy as np
 import mpmath
 import matplotlib.pyplot as plt
+from typing import Literal, Optional, Tuple, overload
+
+__all__ = ["run", "IntersectionResults"]
 
 # This is if you want mouse rotation support for windows
 import matplotlib
@@ -278,7 +281,46 @@ def _run_box_search(
     return IntersectionResults(found)
 
 
-def run(algorithm, **kwargs):
+@overload
+def run(
+    algorithm: Literal["circleSearch"], *,
+    starting_point: Tuple[float, float] = ...,
+    initial_radius: float = ...,
+    rounds: int = ...,
+    circles_per_round: int = ...,
+    iterations: int = ...,
+    radius_range: Tuple[float, float] = ...,
+    seed_results: Optional["IntersectionResults"] = ...,
+    verbose: bool = ...,
+    precision: int = ...,
+) -> "IntersectionResults": ...
+
+@overload
+def run(
+    algorithm: Literal["columbusSearch"], *,
+    starting_point: Tuple[float, float] = ...,
+    initial_radius: float = ...,
+    iterations: int = ...,
+    radius: Optional[float] = ...,
+    radius_range: Tuple[float, float] = ...,
+    direction: Optional[str] = ...,
+    seed_results: Optional["IntersectionResults"] = ...,
+    verbose: bool = ...,
+    precision: int = ...,
+) -> "IntersectionResults": ...
+
+@overload
+def run(
+    algorithm: Literal["boxSearch"], *,
+    box_start: Tuple[float, float] = ...,
+    box_end: Tuple[float, float] = ...,
+    num_circles: int = ...,
+    radius_range: Tuple[float, float] = ...,
+    verbose: bool = ...,
+    precision: int = ...,
+) -> "IntersectionResults": ...
+
+def run(algorithm: str, **kwargs) -> "IntersectionResults":
     if algorithm == "circleSearch":
         return _run_random_circle_search(**kwargs)
     elif algorithm == "columbusSearch":
