@@ -68,6 +68,7 @@ class IntersectionResults:
     def __init__(self, points):
         self._re = np.array([p[0] for p in points])
         self._im = np.array([p[1] for p in points])
+        self._zeta_avg = None  # computed lazily
 
     def __add__(self, other):
         combined = list(zip(self._re, self._im)) + list(zip(other._re, other._im))
@@ -84,12 +85,20 @@ class IntersectionResults:
     def imag(self):
         return self._im
 
+    @property
+    def zeta_avg(self):
+        """Average of Re(zeta(s)) and Im(zeta(s)) at each intersection point."""
+        if self._zeta_avg is None:
+            zeta_re, zeta_im = _compute_zeta(self._re, self._im)
+            self._zeta_avg = (zeta_re + zeta_im) / 2.0
+        return self._zeta_avg
+
     def to_csv(self, path):
         with open(path, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["Re(s)", "Im(s)"])
-            for re, im in zip(self._re, self._im):
-                writer.writerow([re, im])
+            writer.writerow(["Re(s)", "Im(s)","Zeta_result"])
+            for re, im, zeta in zip(self._re, self._im,self._zeta_avg):
+                writer.writerow([re, im, zeta])
 
     def plot_intersects(self, show_critical_line=False):
         plt.scatter(self._im, self._re, s=10, alpha=0.7)
@@ -124,6 +133,18 @@ class IntersectionResults:
         plt.ylabel("Re(s)")
         plt.title(f"Riemann Zeta Intersections ({len(self._re)} points)")
         plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.show()
+
+    def plot_3d(self):
+        """3D scatter plot: x=Im(s), y=Re(s), z=zeta_avg."""
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection="3d")
+        ax.scatter(self._im, self._re, self.zeta_avg, s=10, alpha=0.7)
+        ax.set_xlabel("Im(s)")
+        ax.set_ylabel("Re(s)")
+        ax.set_zlabel("zeta_avg")
+        ax.set_title(f"Riemann Zeta Intersections — 3D ({len(self._re)} points)")
         plt.tight_layout()
         plt.show()
 

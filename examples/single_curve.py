@@ -15,6 +15,5 @@ results = down_search + up_search
 # Zeta interpolation
 results = zetaExplorer.run("circleSearch", seed_results=results)
 
-
 results.to_csv("intersections.csv")
 results.plot_intersects()
