@@ -1,5 +1,6 @@
 import random
 import csv
+from collections import deque
 import numpy as np
 import mpmath
 import matplotlib.pyplot as plt
@@ -72,14 +73,23 @@ def _status(msg, verbose):
 
 
 class IntersectionResults:
-    def __init__(self, points):
+    def __init__(self, points, peak=None):
         self._re = np.array([p[0] for p in points])
         self._im = np.array([p[1] for p in points])
         self._zeta_avg = None  # computed lazily
+        if peak is not None:
+            self._peak_re = np.array([peak[0]])
+            self._peak_im = np.array([peak[1]])
+        else:
+            self._peak_re = np.array([])
+            self._peak_im = np.array([])
 
     def __add__(self, other):
         combined = list(zip(self._re, self._im)) + list(zip(other._re, other._im))
-        return IntersectionResults(combined)
+        result = IntersectionResults(combined)
+        result._peak_re = np.concatenate([self._peak_re, other._peak_re])
+        result._peak_im = np.concatenate([self._peak_im, other._peak_im])
+        return result
 
     def __len__(self):
         return len(self._re)
@@ -91,6 +101,14 @@ class IntersectionResults:
     @property
     def imag(self):
         return self._im
+
+    @property
+    def peak_real(self):
+        return self._peak_re
+
+    @property
+    def peak_imag(self):
+        return self._peak_im
 
     @property
     def zeta_avg(self):
@@ -119,12 +137,15 @@ class IntersectionResults:
                 writer.writerow([re, im, zeta])
 
     def plot_intersects(self, show_critical_line=False):
+        has_legend = False
         plt.scatter(self._im, self._re, s=10, alpha=0.7)
+        if len(self._peak_re) > 0:
+            plt.scatter(self._peak_im, self._peak_re, s=30, color="orange", label=f"Max real peaks ({len(self._peak_re)})")
+            has_legend = True
         if show_critical_line:
             plt.axhline(y=0.5, color="red", linewidth=1, linestyle="--", label="Critical line Re(s)=½")
             im_min, im_max = self._im.min(), self._im.max()
             zeros_im = []
-            # Upper half-plane zeros (positive imaginary part)
             n = 1
             while True:
                 z = mpmath.zetazero(n)
@@ -134,7 +155,6 @@ class IntersectionResults:
                 if t >= im_min:
                     zeros_im.append(t)
                 n += 1
-            # Lower half-plane zeros (negative imaginary part, conjugates)
             n = 1
             while True:
                 t = -float(mpmath.zetazero(n).imag)
@@ -144,8 +164,10 @@ class IntersectionResults:
                     zeros_im.append(t)
                 n += 1
             if zeros_im:
-                plt.scatter(zeros_im, [0.5] * len(zeros_im),
-                            s=40, color="red", zorder=5, label=f"Zeta zeros ({len(zeros_im)})")
+                plt.scatter(zeros_im, [0.5] * len(zeros_im),s=10,
+                        color="red", label=f"Zeta zeros ({len(zeros_im)})")
+            has_legend = True
+        if has_legend:
             plt.legend()
         plt.xlabel("Im(s)")
         plt.ylabel("Re(s)")
@@ -264,6 +286,69 @@ def _run_columbus_search(
     return IntersectionResults(found)
 
 
+def _is_oscillating(vals, min_reversals):
+    if len(vals) < 3:
+        return False
+    diffs = [vals[i + 1] - vals[i] for i in range(len(vals) - 1)]
+    reversals = sum(1 for i in range(len(diffs) - 1) if diffs[i] * diffs[i + 1] < 0)
+    return reversals >= min_reversals
+
+
+def _run_find_max_real(
+    starting_point=(0.5, 14.135),
+    direction=None,
+    initial_radius=1.0,
+    iterations=30,
+    osc_window=6,
+    osc_min_reversals=2,
+    verbose=True,
+    precision=500):
+    visited = set()
+    sx, sy = starting_point
+    radius = initial_radius
+    recent_im = deque(maxlen=osc_window)
+
+    if direction is None:
+        re_arr, im_arr = _generate_circle(sx, sy, radius, precision)
+    else:
+        re_arr, im_arr = _generate_arc(sx, sy, radius, precision, direction)
+    zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
+    crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im)
+    found = list(crossings)
+    _status(f"Step 0/seed: {len(crossings)} new | {len(found)} total | radius={radius:.4f}", verbose)
+
+    for step in range(1, iterations + 1):
+        candidates = [p for p in found if p not in visited]
+        if not candidates:
+            _status(f"Step {step}: all points visited, stopping.", verbose)
+            break
+
+        cx, cy = max(candidates, key=lambda p: p[0])
+        visited.add((cx, cy))
+
+        recent_im.append(cy)
+        if _is_oscillating(list(recent_im), osc_min_reversals):
+            radius /= 2
+            recent_im.clear()
+            _status(f"Step {step}/{iterations}: oscillation → radius={radius:.6f}", verbose)
+
+        if direction is None:
+            re_arr, im_arr = _generate_circle(cx, cy, radius, precision)
+        else:
+            re_arr, im_arr = _generate_arc(cx, cy, radius, precision, direction)
+        zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
+        crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im)
+        found.extend(crossings)
+
+        best_re = max(found, key=lambda p: p[0])[0]
+        _status(f"Step {step}/{iterations}: re={cx:.4f} | {len(crossings)} new | {len(found)} total | best_re={best_re:.4f} | radius={radius:.4f}", verbose)
+
+    if verbose:
+        print()
+    peak = max(found, key=lambda p: p[0]) if found else starting_point
+    return IntersectionResults(found, peak=peak)
+
+
 def _run_box_search(
     box_start=(0.0, 0.0),    # (re_min, im_min) — lower corner of the box
     box_end=(1.0, 30.0),     # (re_max, im_max) — upper corner of the box
@@ -331,12 +416,27 @@ def run(
     precision: int = ...,
 ) -> "IntersectionResults": ...
 
-def run(algorithm: str, **kwargs) -> "IntersectionResults":
+@overload
+def run(
+    algorithm: Literal["findMaxReal"], *,
+    starting_point: Tuple[float, float] = ...,
+    direction: Optional[str] = ...,
+    initial_radius: float = ...,
+    iterations: int = ...,
+    osc_window: int = ...,
+    osc_min_reversals: int = ...,
+    verbose: bool = ...,
+    precision: int = ...,
+) -> "IntersectionResults": ...
+
+def run(algorithm: str, **kwargs):
     if algorithm == "circleSearch":
         return _run_random_circle_search(**kwargs)
     elif algorithm == "columbusSearch":
         return _run_columbus_search(**kwargs)
     elif algorithm == "boxSearch":
         return _run_box_search(**kwargs)
+    elif algorithm == "findMaxReal":
+        return _run_find_max_real(**kwargs)
     else:
         raise ValueError(f"Unknown algorithm: '{algorithm}'")
