@@ -20,6 +20,13 @@ The goal behind that data collection is to find equations that describe individu
 pip install git+https://github.com/JDvorak1/Zeta-intersect-explorer.git
 ```
 
+## Update
+
+```bash
+pip install --upgrade git+https://github.com/JDvorak1/Zeta-intersect-explorer.git
+```
+
+
 ---
 
 ## Contents
