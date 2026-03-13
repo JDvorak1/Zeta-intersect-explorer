@@ -101,7 +101,7 @@ class IntersectionResults:
         with open(path, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(["Re(s)", "Im(s)","Zeta_result"])
-            for re, im, zeta in zip(self._re, self._im,self._zeta_avg):
+            for re, im, zeta in zip(self._re, self._im, self.zeta_avg):
                 writer.writerow([re, im, zeta])
 
     def plot_intersects(self, show_critical_line=False):
