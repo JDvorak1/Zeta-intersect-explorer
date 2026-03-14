@@ -4,7 +4,7 @@ from collections import deque
 import numpy as np
 import mpmath
 import matplotlib.pyplot as plt
-from typing import Literal, Optional, Tuple, overload
+from typing import Literal, Optional, Tuple, Union, overload
 
 __all__ = ["run", "IntersectionResults"]
 
@@ -368,6 +368,9 @@ def _run_box_search(
     box_end=(1.0, 30.0),     # (re_max, im_max) — upper corner of the box
     num_circles=100,
     radius_range=(0.25, 1.0),
+    controlled_search=False,
+    iterations=None,         # number of lines for controlled_search (alias: circle_num)
+    circle_num=None,
     verbose=True,
     precision=250,
     transform_real=None,
@@ -376,17 +379,42 @@ def _run_box_search(
     re_max, im_max = box_end
 
     found = []
-    for i in range(1, num_circles + 1):
-        cx = random.uniform(re_min, re_max)
-        cy = random.uniform(im_min, im_max)
-        radius = random.uniform(*radius_range)
-        re_arr, im_arr = _generate_circle(cx, cy, radius, precision)
-        zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
-        crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im, transform_real, transform_imag)
-        in_box = [(re, im) for re, im in crossings
-                  if re_min <= re <= re_max and im_min <= im <= im_max]
-        found.extend(in_box)
-        _status(f"Circle {i}/{num_circles}: {len(in_box)} kept | {len(found)} total", verbose)
+
+    if controlled_search:
+        n_lines = iterations if iterations is not None else (circle_num if circle_num is not None else 50)
+        directions = ["horizontal", "vertical"] if controlled_search == "both" else \
+                     ["vertical"] if controlled_search == "vertical" else ["horizontal"]
+        for direction in directions:
+            if direction == "vertical":
+                re_vals = np.linspace(re_min, re_max, n_lines)
+                im_arr = np.linspace(im_min, im_max, precision)
+                for i, cx in enumerate(re_vals, 1):
+                    re_arr = np.full(precision, cx)
+                    zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
+                    crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im, transform_real, transform_imag)
+                    found.extend(crossings)
+                    _status(f"Vertical line {i}/{n_lines}: {len(crossings)} found | {len(found)} total", verbose)
+            else:
+                im_vals = np.linspace(im_min, im_max, n_lines)
+                re_arr = np.linspace(re_min, re_max, precision)
+                for i, cy in enumerate(im_vals, 1):
+                    im_arr = np.full(precision, cy)
+                    zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
+                    crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im, transform_real, transform_imag)
+                    found.extend(crossings)
+                    _status(f"Horizontal line {i}/{n_lines}: {len(crossings)} found | {len(found)} total", verbose)
+    else:
+        for i in range(1, num_circles + 1):
+            cx = random.uniform(re_min, re_max)
+            cy = random.uniform(im_min, im_max)
+            radius = random.uniform(*radius_range)
+            re_arr, im_arr = _generate_circle(cx, cy, radius, precision)
+            zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
+            crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im, transform_real, transform_imag)
+            in_box = [(re, im) for re, im in crossings
+                      if re_min <= re <= re_max and im_min <= im <= im_max]
+            found.extend(in_box)
+            _status(f"Circle {i}/{num_circles}: {len(in_box)} kept | {len(found)} total", verbose)
 
     if verbose:
         print()
@@ -432,6 +460,9 @@ def run(
     box_end: Tuple[float, float] = ...,
     num_circles: int = ...,
     radius_range: Tuple[float, float] = ...,
+    controlled_search: Union[bool, Literal["horizontal", "vertical", "both"]] = ...,
+    iterations: Optional[int] = ...,
+    circle_num: Optional[int] = ...,
     verbose: bool = ...,
     precision: int = ...,
     transform_real: Optional[callable] = ...,

@@ -8,8 +8,9 @@ results = zetaExplorer.run(
     "boxSearch",
     box_start=(-3, -2),
     box_end=(2, 2),
-    radius_range=(0.5, 1),
-    precision=250,
+    controlled_search="both",
+    iterations=100,
+    precision=500,
     transform_imag=lambda x: 2*x**2, # transforming data before checking itersections 
 )
 
