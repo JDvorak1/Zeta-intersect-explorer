@@ -55,8 +55,10 @@ def _compute_zeta(re_arr, im_arr):
     return zeta_re, zeta_im
 
 
-def _find_intersections(re_arr, im_arr, zeta_re, zeta_im):
-    diff = zeta_re - zeta_im
+def _find_intersections(re_arr, im_arr, zeta_re, zeta_im, transform_real=None, transform_imag=None):
+    tr = transform_real(zeta_re) if transform_real is not None else zeta_re
+    ti = transform_imag(zeta_im) if transform_imag is not None else zeta_im
+    diff = tr - ti
     crossings = []
     for i in range(len(diff) - 1):
         if diff[i] * diff[i + 1] < 0:
@@ -198,7 +200,9 @@ def _run_random_circle_search(
     radius_range=(0.25, 1.0),
     seed_results=None,     # IntersectionResults to continue from instead of generating a seed circle
     verbose=True,
-    precision=500):
+    precision=500,
+    transform_real=None,
+    transform_imag=None):
     if seed_results is not None:
         found = list(zip(seed_results.real, seed_results.imag))
         _status(f"Seeded from existing data: {len(found)} points", verbose)
@@ -207,7 +211,7 @@ def _run_random_circle_search(
             radius = random.uniform(*radius_range)
             re_arr, im_arr = _generate_circle(cx, cy, radius, precision)
             zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
-            crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im)
+            crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im, transform_real, transform_imag)
             found.extend(crossings)
             _status(f"Step {step}/{iterations}: {len(crossings)} new | {len(found)} total", verbose)
     else:
@@ -215,9 +219,11 @@ def _run_random_circle_search(
         cx, cy = starting_point
         re_arr, im_arr = _generate_circle(cx, cy, initial_radius, precision)
         zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
-        crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im)
+        crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im, transform_real, transform_imag)
         found.extend(crossings)
         _status(f"Round 0/seed: {len(crossings)} new | {len(found)} total", verbose)
+        if not found:
+            raise RuntimeError("No intersections found on the initial seed circle. Try a different starting_point, initial_radius, or transform.")
         for round_num in range(1, rounds + 1):
             if not found:
                 break
@@ -227,7 +233,7 @@ def _run_random_circle_search(
                 radius = random.uniform(*radius_range)
                 re_arr, im_arr = _generate_circle(cx, cy, radius, precision)
                 zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
-                crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im)
+                crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im, transform_real, transform_imag)
                 found.extend(crossings)
                 new_this_round += len(crossings)
             _status(f"Round {round_num}/{rounds}: {new_this_round} new | {len(found)} total", verbose)
@@ -246,7 +252,9 @@ def _run_columbus_search(
     direction=None,        # Seed shape: None=full circle, or "north"/"south"/"east"/"west" (or degrees)
     seed_results=None,     # IntersectionResults to continue from instead of generating a seed circle
     verbose=True,
-    precision=500):
+    precision=500,
+    transform_real=None,
+    transform_imag=None):
     visited = set()
     sx, sy = starting_point
 
@@ -260,9 +268,11 @@ def _run_columbus_search(
         else:
             re_arr, im_arr = _generate_arc(sx, sy, initial_radius, precision, direction)
         zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
-        crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im)
+        crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im, transform_real, transform_imag)
         found.extend(crossings)
         _status(f"Step 0/seed: {len(crossings)} new | {len(found)} total", verbose)
+        if not found:
+            raise RuntimeError("No intersections found on the initial seed circle. Try a different starting_point, initial_radius, or transform.")
 
     for step in range(1, iterations + 1):
         candidates = [p for p in found if p not in visited]
@@ -275,7 +285,7 @@ def _run_columbus_search(
         r = random.uniform(*radius_range) if radius is None else radius
         re_arr, im_arr = _generate_circle(cx, cy, r, precision)
         zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
-        crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im)
+        crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im, transform_real, transform_imag)
         found.extend(crossings)
 
         dist = ((cx - sx) ** 2 + (cy - sy) ** 2) ** 0.5
@@ -302,7 +312,9 @@ def _run_find_max_real(
     osc_window=6,
     osc_min_reversals=2,
     verbose=True,
-    precision=500):
+    precision=500,
+    transform_real=None,
+    transform_imag=None):
     visited = set()
     sx, sy = starting_point
     radius = initial_radius
@@ -313,9 +325,11 @@ def _run_find_max_real(
     else:
         re_arr, im_arr = _generate_arc(sx, sy, radius, precision, direction)
     zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
-    crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im)
+    crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im, transform_real, transform_imag)
     found = list(crossings)
     _status(f"Step 0/seed: {len(crossings)} new | {len(found)} total | radius={radius:.4f}", verbose)
+    if not found:
+        raise RuntimeError("No intersections found on the initial seed circle. Try a different starting_point, initial_radius, or transform.")
 
     for step in range(1, iterations + 1):
         candidates = [p for p in found if p not in visited]
@@ -337,7 +351,7 @@ def _run_find_max_real(
         else:
             re_arr, im_arr = _generate_arc(cx, cy, radius, precision, direction)
         zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
-        crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im)
+        crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im, transform_real, transform_imag)
         found.extend(crossings)
 
         best_re = max(found, key=lambda p: p[0])[0]
@@ -352,10 +366,12 @@ def _run_find_max_real(
 def _run_box_search(
     box_start=(0.0, 0.0),    # (re_min, im_min) — lower corner of the box
     box_end=(1.0, 30.0),     # (re_max, im_max) — upper corner of the box
-    num_circles=250,
+    num_circles=100,
     radius_range=(0.25, 1.0),
     verbose=True,
-    precision=250):
+    precision=250,
+    transform_real=None,
+    transform_imag=None):
     re_min, im_min = box_start
     re_max, im_max = box_end
 
@@ -366,7 +382,7 @@ def _run_box_search(
         radius = random.uniform(*radius_range)
         re_arr, im_arr = _generate_circle(cx, cy, radius, precision)
         zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
-        crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im)
+        crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im, transform_real, transform_imag)
         in_box = [(re, im) for re, im in crossings
                   if re_min <= re <= re_max and im_min <= im <= im_max]
         found.extend(in_box)
@@ -389,6 +405,8 @@ def run(
     seed_results: Optional["IntersectionResults"] = ...,
     verbose: bool = ...,
     precision: int = ...,
+    transform_real: Optional[callable] = ...,
+    transform_imag: Optional[callable] = ...,
 ) -> "IntersectionResults": ...
 
 @overload
@@ -403,6 +421,8 @@ def run(
     seed_results: Optional["IntersectionResults"] = ...,
     verbose: bool = ...,
     precision: int = ...,
+    transform_real: Optional[callable] = ...,
+    transform_imag: Optional[callable] = ...,
 ) -> "IntersectionResults": ...
 
 @overload
@@ -414,6 +434,8 @@ def run(
     radius_range: Tuple[float, float] = ...,
     verbose: bool = ...,
     precision: int = ...,
+    transform_real: Optional[callable] = ...,
+    transform_imag: Optional[callable] = ...,
 ) -> "IntersectionResults": ...
 
 @overload
@@ -427,6 +449,8 @@ def run(
     osc_min_reversals: int = ...,
     verbose: bool = ...,
     precision: int = ...,
+    transform_real: Optional[callable] = ...,
+    transform_imag: Optional[callable] = ...,
 ) -> "IntersectionResults": ...
 
 def run(algorithm: str, **kwargs):

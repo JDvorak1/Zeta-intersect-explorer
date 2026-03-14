@@ -33,6 +33,7 @@ pip install --upgrade git+https://github.com/JDvorak1/Zeta-intersect-explorer.gi
 
 - [The Riemann-zeta fingerprint](#the-riemann-zeta-fingerprint)
 - [The zeta egg](#the-zeta-egg)
+- [Transformation heart](#transformation-heart)
 - [Single curves](#single-curves)
 - [Box search](#box-search)
 - [Non-trivial peaks](#non-trivial-peaks)
@@ -89,6 +90,29 @@ results = zetaExplorer.run("circleSearch", starting_point=(-2, 0),
 
 results.plot_intersects()
 results.plot_3d()
+```
+
+## Transformation heart
+
+Transforms can be applied to Re(ζ(s)) and Im(ζ(s)) before the intersection check, changing the curve being searched for. With `transform_imag=lambda x: 2*x**2`, the search finds all points where Re(ζ(s)) = 2·Im(ζ(s))², which produces a heart-shaped figure near the origin.
+
+![Transformation heart](figures/Transformation%20heart.png)
+
+Produced with [`examples/eggsplorer_transform.py`](examples/eggsplorer_transform.py):
+
+```python
+import zetaExplorer
+
+results = zetaExplorer.run(
+    "boxSearch",
+    box_start=(-3, -2),
+    box_end=(2, 2),
+    radius_range=(0.5, 1),
+    precision=250,
+    transform_imag=lambda x: 2*x**2,
+)
+
+results.plot_intersects()
 ```
 
 ---
@@ -295,6 +319,7 @@ zetaExplorer.py         — the full tool (single file)
 examples/
 ├── map_explorer.py              — broad fingerprint map
 ├── eggsplorer.py                — closed egg structure near (-2, 0)
+├── eggsplorer_transform.py      — transformation heart (Re = 2·Im²)
 ├── single_curve.py              — single-branch Columbus trace
 ├── box_search_critical_line.py  — box search along the critical strip
 └── non-trivial_peaks.py         — peak real-axis finder for non-trivial zeros
@@ -303,6 +328,7 @@ figures/
 ├── fingerprint1.png
 ├── fingerprint 2.png
 ├── the zeta egg.png
+├── Transformation heart.png
 ├── single curve algo.png
 ├── zero line.png
 └── zeta zeros.png
