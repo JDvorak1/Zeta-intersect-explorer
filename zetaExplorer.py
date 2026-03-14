@@ -49,7 +49,12 @@ def _compute_zeta(re_arr, im_arr):
     zeta_im = np.empty(n)
     for i in range(n):
         s = mpmath.mpc(re_arr[i], im_arr[i])
-        z = mpmath.zeta(s)
+        try:
+            z = mpmath.zeta(s)
+        except ValueError:
+            zeta_re[i] = float('nan')
+            zeta_im[i] = float('nan')
+            continue
         zeta_re[i] = float(z.real)
         zeta_im[i] = float(z.imag)
     return zeta_re, zeta_im
@@ -61,6 +66,8 @@ def _find_intersections(re_arr, im_arr, zeta_re, zeta_im, transform_real=None, t
     diff = tr - ti
     crossings = []
     for i in range(len(diff) - 1):
+        if np.isnan(diff[i]) or np.isnan(diff[i + 1]):
+            continue
         if diff[i] * diff[i + 1] < 0:
             t = diff[i] / (diff[i] - diff[i + 1])
             re = re_arr[i] + t * (re_arr[i + 1] - re_arr[i])
