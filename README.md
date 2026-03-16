@@ -143,8 +143,8 @@ up_search   = zetaExplorer.run("columbusSearch", starting_point=starting_point,
 
 results = down_search + up_search
 
-# optional: fill in gaps with circle search
-results = zetaExplorer.run("circleSearch", seed_results=results)
+# Refine the data points
+results = results.refine(length=0.05, precision=500)
 
 results.to_csv("intersections.csv")
 results.plot_intersects()
@@ -309,6 +309,20 @@ results.plot_intersects()        # scatter plot (Im on x-axis, Re on y-axis)
 results.to_csv("output.csv")     # save as CSV with columns Re(s), Im(s)
 
 combined = results_a + results_b # merge two result sets
+```
+
+#### `.refine(length, precision, direction, transform_real, transform_imag)`
+
+For each point in the results, sweeps a `linspace` line segment of the given `length` centred on that point, runs the zeta intersection algorithm on it, and returns a new `IntersectionResults` containing only the newly discovered points — the original seeds are discarded.
+
+```python
+results = results.refine(
+    length=0.05,          # total segment length (half extends each side of the point)
+    precision=500,        # number of linspace samples per line
+    direction="horizontal", # "horizontal" (vary Re, fix Im) or "vertical" (fix Re, vary Im)
+    transform_real=None,  # optional transform applied to Re(ζ) before intersection check
+    transform_imag=None,  # optional transform applied to Im(ζ) before intersection check
+)
 ```
 
 ---

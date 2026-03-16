@@ -12,8 +12,8 @@ up_search   = zetaExplorer.run("columbusSearch", starting_point=starting_point, 
 
 results = down_search + up_search
 
-# Zeta interpolation
-results = zetaExplorer.run("circleSearch", seed_results=results)
+# Refine the data points
+results = results.refine(length=0.05, precision=500)
 
 results.to_csv("intersections.csv")
 

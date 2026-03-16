@@ -185,6 +185,30 @@ class IntersectionResults:
         plt.tight_layout()
         plt.show()
 
+    def refine(self, length=0.1, precision=500, transform_real=None, transform_imag=None,
+               direction="horizontal", verbose=True):
+        found = []
+        half = length / 2
+        n = len(self._re)
+
+        for i, (re, im) in enumerate(zip(self._re, self._im), 1):
+            if direction == "horizontal":
+                re_arr = np.linspace(re - half, re + half, precision)
+                im_arr = np.full(precision, im)
+            else:  # vertical
+                re_arr = np.full(precision, re)
+                im_arr = np.linspace(im - half, im + half, precision)
+
+            zeta_re, zeta_im = _compute_zeta(re_arr, im_arr)
+            crossings = _find_intersections(re_arr, im_arr, zeta_re, zeta_im, transform_real, transform_imag)
+            new = len(crossings)
+            found.extend(crossings)
+            _status(f"Refine point {i}/{n}: {new} new | {len(found)} total", verbose)
+
+        if verbose:
+            print()
+        return IntersectionResults(found)
+
     def plot_3d(self):
         """3D scatter plot: x=Im(s), y=Re(s), z=zeta_avg."""
         fig = plt.figure()
