@@ -115,7 +115,7 @@ results = zetaExplorer.run(
 
 results.plot_intersects()
 ```
-
+![Heart](figures/zeta_box_transformed.gif)
 ---
 
 ## Single curves
